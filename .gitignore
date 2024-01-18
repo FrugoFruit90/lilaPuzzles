@@ -1,11 +1,10 @@
-.sbtopts
+
 .jvmopts
 .bsp
 .bloop/
 .metals/
 .pnpm-store/
 project/.bloop/
-conf/application.conf
 conf/version.conf
 ui/@build/build-config.json
 
