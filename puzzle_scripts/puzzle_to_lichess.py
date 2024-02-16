@@ -36,8 +36,8 @@ with open("puzzles_filtered.pgn", "w") as f:
     for i, line in enumerate(lines):
         if i not in set(rows_to_skip):
             puzzle_dict = ast.literal_eval(line)
-            puzzle_dict['_id'] = f"puzzle{i}"
-            puzzle_dict['gameId'] = f"game{i}"
+            puzzle_dict['_id'] = f"p{str(i).zfill(7)}"
+            puzzle_dict['gameId'] = f"game{str(i).zfill(7)}"
             puzzle_dict['themes'] = []
             puzzle_dict['glicko'] = {'r': 1500,
                                      'd': 100,
