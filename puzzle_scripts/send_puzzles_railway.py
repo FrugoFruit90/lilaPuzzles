@@ -29,7 +29,7 @@ def bulk_write(
     res = coll.bulk_write(ledger).bulk_api_result
 
 
-uri = URI
+uri = 'mongodb://rootuser:rootpass@localhost:27017/lichess'
 
 
 with open('../../../lichess-puzzler/puzzles_filtered.pgn') as f:
