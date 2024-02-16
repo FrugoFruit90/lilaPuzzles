@@ -21,7 +21,7 @@ final class Env(
   private val driver = new AsyncDriver(appConfig.get[Config]("mongodb").some)
 
   lazy val mainDb = Db(
-    name = "main",
+    name = "lichess",
     uri = appConfig.get[String]("mongodb.uri"),
     driver = driver
   )
