@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: rootuser
+      MONGO_INITDB_ROOT_PASSWORD: rootpass
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  app:
+    build: .
+    container_name: my_app
+    ports:
+      - "9663:9663"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: rootuser
+      MONGO_INITDB_ROOT_PASSWORD: rootpass
+      MONGO_PRIVATE_URL: mongodb://rootuser:rootpass@mongo:27017/admin
+      REDIS_PRIVATE_URL: redis://redis:6379
+    depends_on:
+      - mongo
+      - redis
+
+volumes:
+  mongo_data:
+  redis_data:

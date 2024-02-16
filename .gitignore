@@ -52,5 +52,5 @@ RUNNING_PID
 .idea
 
 # Docker-compose / docker sbt
-/docker-compose.yml
+# /docker-compose.yml
 /?
