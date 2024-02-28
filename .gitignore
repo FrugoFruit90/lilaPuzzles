@@ -54,3 +54,6 @@ RUNNING_PID
 # Docker-compose / docker sbt
 # /docker-compose.yml
 /?
+
+.venv
+dev
