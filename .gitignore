@@ -57,3 +57,5 @@ RUNNING_PID
 
 .venv
 dev
+puzzle_scripts/*.jsonl
+puzzle_scripts/*.pgn
