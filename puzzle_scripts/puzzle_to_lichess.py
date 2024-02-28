@@ -179,15 +179,17 @@ with open("puzzles_filtered.jsonl", "w") as puzzles_filtered, open(
             games_filtered.write(json.dumps(game_dict) + "\n")
 
 
+theme = "mix"
+tier = "good"
 with open("paths_filtered.jsonl", "w") as paths_filtered:
     for i, chunk in enumerate(more_itertools.chunked(puzzle_ids, 10)):
         puzzle_path = {
-            "_id": f"mix|good|0000-9999|1620110906065|{i}",
-            "min": "mix|good|0000",
-            "max": "mix|good|9999",
+            "_id": f"{theme}|{tier}|0000-9999|1620110906065|{i}",
+            "min": f"{theme}|{tier}|0000",
+            "max": f"{theme}|{tier}|9999",
             "ids": chunk,
-            "tier": "good",
-            "theme": "mix",
+            "tier": tier,
+            "theme": theme,
             "gen": 1620110906065,
         }
         paths_filtered.write(json.dumps(puzzle_path) + "\n")
