@@ -52,7 +52,7 @@ const puzzleInfos = (ctrl: PuzzleCtrl, puzzle: Puzzle): VNode =>
             'ratingX',
             !ctrl.streak && ctrl.mode === 'play'
               ? h('span.hidden', ctrl.trans.noarg('hidden'))
-              // changed so that the rating is hiddent in UI - the original line is left below
+              // changed so that the puzzle rating is hidden in the UI - the original line is left below
               : h('span.hidden', ctrl.trans.noarg('hidden')),
               // : h('strong', `${puzzle.rating}`),
               // end of the change

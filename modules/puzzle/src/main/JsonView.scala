@@ -203,7 +203,7 @@ object JsonView:
 
   private def puzzleJsonBase(puzzle: Puzzle): JsObject = Json.obj(
     "id"       -> puzzle.id,
-    // changed so that the rating reported as -9999 - the original line is left below
+    // changed so that the puzzle rating is reported as -9999 - the original line is left below
     "rating"   -> IntRating(-9999),
     // "rating"   -> puzzle.glicko.intRating,
     // end of the change
