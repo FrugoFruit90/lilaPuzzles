@@ -52,7 +52,10 @@ const puzzleInfos = (ctrl: PuzzleCtrl, puzzle: Puzzle): VNode =>
             'ratingX',
             !ctrl.streak && ctrl.mode === 'play'
               ? h('span.hidden', ctrl.trans.noarg('hidden'))
-              : h('strong', `${puzzle.rating}`),
+              // changed so that the rating is hiddent in UI - the original line is left below
+              : h('span.hidden', ctrl.trans.noarg('hidden')),
+              // : h('strong', `${puzzle.rating}`),
+              // end of the change
           ),
         ),
       h('p', ctrl.trans.vdomPlural('playedXTimes', puzzle.plays, h('strong', numberFormat(puzzle.plays)))),
