@@ -12,6 +12,7 @@ user.password.bpass.secret = "9qEYN0ThHer1KWLNekA76Q=="
 
 # override additional values from base.conf here
 http.port = ${?PORT}
-net.domain = ${?RAILWAY_PUBLIC_DOMAIN}
+net.domain = ${?RAILWAY_PRIVATE_DOMAIN}
+net.asset.domain = ${?RAILWAY_PROXY_DOMAIN}
 mongodb.uri = ${?MONGO_PRIVATE_URL}
 redis.uri = ${?REDIS_PRIVATE_URL}
