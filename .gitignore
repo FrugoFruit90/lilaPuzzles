@@ -56,6 +56,8 @@ RUNNING_PID
 /?
 
 .venv
+.env
 dev
 puzzle_scripts/*.jsonl
 puzzle_scripts/*.pgn
+dump_*

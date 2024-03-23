@@ -24,17 +24,6 @@ GENERATOR_VERSION = 1
 
 encoder = autoclass("org.lichess.compression.game.Encoder")
 
-default2 = {
-    "black": "Lebel Arias, Julia",
-    "cp": 688,
-    "fen": "2R5/3rq1k1/p6p/1p3pNQ/Pb2p3/4P2P/5PP1/6K1 w - - 1 30",
-    "game_id": "",
-    "generator_version": "48WC9",
-    "moves": ["c8e8", "e7g5", "e8g8", "g7g8"],
-    "ply": 58,
-    "white": "Hindle, Kathleen",
-}
-
 default = {
     "_id": "01tg7",
     "gameId": "TaHSAsYD",
@@ -179,20 +168,38 @@ with open("puzzles_filtered.jsonl", "w") as puzzles_filtered, open(
             games_filtered.write(json.dumps(game_dict) + "\n")
 
 
+def create_puzzle_path(theme: str, tier: str, number: int, chunk: list[str]):
+    result = {
+        "_id": f"{theme}|{tier}|0000-9999|1620110906065|{number}",
+        "min": f"{theme}|{tier}|0000",
+        "max": f"{theme}|{tier}|9999",
+        "ids": chunk,
+        "tier": tier,
+        "theme": theme,
+        "gen": 1620110906065,
+    }
+    return result
+
+
 theme = "mix"
-tier = "good"
-with open("paths_filtered.jsonl", "w") as paths_filtered:
+tier_good = "good"
+tier_all = "all"
+with open("paths_filtered_tier_good.jsonl", "w") as paths_filtered_tier_good, open(
+    "paths_filtered_tier_all.jsonl", "w"
+) as paths_filtered_tier_all:
     for i, chunk in enumerate(more_itertools.chunked(puzzle_ids, 10)):
-        puzzle_path = {
-            "_id": f"{theme}|{tier}|0000-9999|1620110906065|{i}",
-            "min": f"{theme}|{tier}|0000",
-            "max": f"{theme}|{tier}|9999",
-            "ids": chunk,
-            "tier": tier,
-            "theme": theme,
-            "gen": 1620110906065,
-        }
-        paths_filtered.write(json.dumps(puzzle_path) + "\n")
+        paths_filtered_tier_good.write(
+            json.dumps(
+                create_puzzle_path(theme=theme, tier=tier_good, number=i, chunk=chunk)
+            )
+            + "\n"
+        )
+        paths_filtered_tier_all.write(
+            json.dumps(
+                create_puzzle_path(theme=theme, tier=tier_all, number=i, chunk=chunk)
+            )
+            + "\n"
+        )
 
 # print(len(incorrect_games))
 
