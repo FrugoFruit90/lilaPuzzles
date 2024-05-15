@@ -6,7 +6,7 @@ import chessground from './chessground';
 import feedbackView from './feedback';
 import * as licon from 'common/licon';
 import { stepwiseScroll } from 'common/scroll';
-import { VNode, h } from 'snabbdom';
+import { VNode } from 'snabbdom';
 import { onInsert, bindNonPassive, looseH as lh } from 'common/snabbdom';
 import { bindMobileMousedown } from 'common/device';
 import { render as treeView } from './tree';
@@ -133,44 +133,8 @@ export default function (ctrl: PuzzleCtrl): VNode {
       ]),
       controls(ctrl),
       ctrl.keyboardMove && renderKeyboardMove(ctrl.keyboardMove),
-      session(ctrl),
       ctrl.keyboardHelp() && keyboard.view(ctrl),
     ],
   );
 }
 
-function session(ctrl: PuzzleCtrl) {
-  const rounds = ctrl.session.get().rounds,
-    current = ctrl.data.puzzle.id;
-  return lh('div.puzzle__session', [
-    ...rounds.map(round => {
-      const rd =
-        round.ratingDiff && ctrl.opts.showRatings
-          ? round.ratingDiff > 0
-            ? '+' + round.ratingDiff
-            : round.ratingDiff
-          : null;
-
-      return h(
-        `a.result-${round.result}${rd ? '' : '.result-empty'}`,
-        {
-          key: round.id,
-          class: { current: current == round.id },
-          attrs: {
-            href: `/training/${ctrl.session.theme}/${round.id}`,
-            ...(ctrl.streak ? { target: '_blank', rel: 'noopener' } : {}),
-          },
-        },
-        rd,
-      );
-    }),
-    rounds.find(r => r.id == current)
-      ? !ctrl.streak &&
-        lh('a.session-new', { key: 'new', attrs: { href: `/training/${ctrl.session.theme}` } })
-      : lh(
-          'a.result-cursor.current',
-          { key: current, attrs: ctrl.streak ? {} : { href: `/training/${ctrl.session.theme}/${current}` } },
-          `${ctrl.streak?.data.index ?? 0}`,
-        ),
-  ]);
-}

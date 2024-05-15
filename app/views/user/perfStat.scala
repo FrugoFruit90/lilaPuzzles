@@ -66,14 +66,7 @@ object perfStat:
         )
       )
 
-  def ratingHistoryContainer = div(cls := "rating-history-container")(
-    div(cls := "rating-history-container")(
-      div(cls := "time-selector-buttons"),
-      spinner,
-      div(cls := "chart-container")(canvas(cls := "rating-history")),
-      div(id := "time-range-slider")
-    )
-  )
+  def ratingHistoryContainer = div(cls := "rating-history-container")
 
   private def decimal(v: Double) = lila.common.Maths.roundDownAt(v, 2)
 

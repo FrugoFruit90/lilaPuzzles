@@ -109,8 +109,7 @@ export const userBox = (ctrl: PuzzleCtrl): VNode => {
       h('p', noarg('toGetPersonalizedPuzzles')),
       h('a.button', { attrs: { href: router.withLang('/signup') } }, noarg('signUp')),
     ]);
-  const diff = ctrl.round?.ratingDiff,
-    ratedId = 'puzzle-toggle-rated';
+  const ratedId = 'puzzle-toggle-rated';
   return h('div.puzzle__side__user', [
     !data.replay &&
       !ctrl.streak &&
@@ -131,11 +130,7 @@ export const userBox = (ctrl: PuzzleCtrl): VNode => {
       'div.puzzle__side__user__rating',
       ctrl.rated()
         ? ctrl.opts.showRatings &&
-            h('strong', [
-              data.user.rating - (diff || 0),
-              ...(diff && diff > 0 ? [' ', h('good.rp', '+' + diff)] : []),
-              ...(diff && diff < 0 ? [' ', h('bad.rp', '−' + -diff)] : []),
-            ])
+            h('strong', 'hidden')
         : h('p.puzzle__side__user__rating__casual', noarg('yourPuzzleRatingWillNotChange')),
     ),
   ]);
