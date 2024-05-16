@@ -41,9 +41,12 @@ final private class PuzzlePathApi(colls: PuzzleColls)(using Executor):
           import framework.*
           val rating     = perf.glicko.intRating + difficulty.ratingDelta
           val ratingFlex = (100 + math.abs(1500 - rating.value) / 4) * compromise.atMost(4)
+          val ratingSelector = (compromise < 5).so(
+            select(angle, actualTier, (rating - ratingFlex).value to (rating+ratingFlex).value)
+          )
           Match(
-            select(angle, actualTier, (rating - ratingFlex).value to (rating + ratingFlex).value) ++
-              ((compromise != 5 && previousPaths.nonEmpty) so $doc("_id" $nin previousPaths))
+            ratingSelector ++
+              ((compromise != 5 && previousPaths.nonEmpty).so($doc("_id".$nin(previousPaths))))
           ) -> List(
             Sample(1),
             Project($id(true))
