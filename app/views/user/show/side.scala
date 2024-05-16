@@ -84,6 +84,7 @@ object side:
         showNonEmptyPerf(u.perfs.racingKings, PerfType.RacingKings),
         u.noBot option frag(
           hr,
+          showPerf(u.perfs.puzzle, PerfType.Puzzle),
           showStorm(u.perfs.storm, u),
           showRacer(u.perfs.racer),
           showStreak(u.perfs.streak)
