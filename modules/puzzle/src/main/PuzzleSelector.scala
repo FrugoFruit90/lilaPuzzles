@@ -3,6 +3,9 @@ package lila.puzzle
 import lila.db.dsl.{ *, given }
 import lila.user.Me
 import lila.rating.Perf
+import reactivemongo.api.FailoverStrategy
+import reactivemongo.api.bson.BSONDocument
+import reactivemongo.api.ReadPreference
 
 final class PuzzleSelector(
     colls: PuzzleColls,
@@ -78,40 +81,261 @@ final class PuzzleSelector(
           case PuzzleFound(puzzle) => fuccess(serveAndMonitor(puzzle))
       }
 
+  // private def nextPuzzleResultOrig(session: PuzzleSession)(using me: Me): Fu[NextPuzzleResult] =
+  //   colls
+  //     .path:
+  //       _.aggregateOne(): framework =>
+  //         import framework.*
+  //         Match($id(session.path)) -> List(
+  //           // get the puzzle ID from session position
+  //           Project($doc("puzzleId" -> $doc("$arrayElemAt" -> $arr("$ids", session.positionInPath)))),
+  //           Project:
+  //             $doc(
+  //               "puzzleId" -> true,
+  //               "roundId"  -> $doc("$concat" -> $arr(s"${me.userId}${PuzzleRound.idSep}", "$puzzleId"))
+  //             )
+  //           ,
+  //           // fetch the puzzle
+  //           PipelineOperator:
+  //             $doc:
+  //               "$lookup" -> $doc(
+  //                 "from"         -> colls.puzzle.name.value,
+  //                 "localField"   -> "puzzleId",
+  //                 "foreignField" -> "_id",
+  //                 "as"           -> "puzzle"
+  //               )
+  //           ,
+  //           // look for existing round
+  //           PipelineOperator:
+  //             $doc:
+  //               "$lookup" -> $doc(
+  //                 "from"         -> colls.round.name.value,
+  //                 "localField"   -> "roundId",
+  //                 "foreignField" -> "_id",
+  //                 "as"           -> "round"
+  //               )
+  //         )
+  //     .map: docOpt =>
+  //       import NextPuzzleResult.*
+  //       docOpt.fold[NextPuzzleResult](PathMissing): doc =>
+  //         doc
+  //           .getAsOpt[PuzzleId]("puzzleId")
+  //           .fold[NextPuzzleResult](PathEnded): puzzleId =>
+  //             doc
+  //               .getAsOpt[List[Puzzle]]("puzzle")
+  //               .flatMap(_.headOption)
+  //               .fold[NextPuzzleResult](PuzzleMissing(puzzleId)): puzzle =>
+  //                 if session.settings.color.exists(puzzle.color !=) then WrongColor(puzzle)
+  //                 else if doc.getAsOpt[List[Bdoc]]("round").exists(_.nonEmpty) then
+  //                   PuzzleAlreadyPlayed(puzzle)
+  //                 else PuzzleFound(puzzle)
+  //     .monValue: result =>
+  //       _.puzzle.selector.nextPuzzleResult(
+  //         theme = session.path.angle.key,
+  //         difficulty = session.settings.difficulty.key,
+  //         color = session.settings.color.fold("random")(_.name),
+  //         result = result.name
+  //       )
+
+  // private def nextPuzzleResult_v1(session: PuzzleSession)(using me: Me): Fu[NextPuzzleResult] =
+  //   val user = me.userId
+  //   val commandDoc = $doc(
+  //     "aggregate" -> "puzzle2_round",
+  //     "pipeline" -> $arr(
+  //       $doc(
+  //         "$project" -> $doc(
+  //           "puzzle_id" ->
+  //             $doc(
+  //               "$arrayElemAt" -> $arr(
+  //                 $doc("$split" -> $arr("$_id", ":")),
+  //                 1
+  //               )
+  //             ),
+  //           "u" -> 1,
+  //           "w" -> 1
+  //         )
+  //       ),
+  //       $doc(
+  //         "$group" -> $doc(
+  //           "_id"          -> "$puzzle_id",
+  //           "count"        -> $doc("$count" -> $doc()),
+  //           "done_by_user" -> $doc("$sum" -> $doc("$cond" -> $arr($doc("$eq" -> $arr("$u", f"$user")), 1, 0)))
+  //         )
+  //       ),
+  //       $doc(
+  //         "$match" -> $doc(
+  //           "done_by_user" -> 0
+  //         )
+  //       ),
+  //       $doc(
+  //         "$sort" -> $doc(
+  //           "count" -> 1
+  //         )
+  //       ),
+  //       $doc("$limit" -> 1),
+  //       $doc(
+  //         "$unionWith" -> $doc(
+  //           "coll" -> "puzzle2_puzzle",
+  //           "pipeline" -> $arr(
+  //             $doc("$sample" -> $doc("size" -> 1))
+  //           )
+  //         )
+  //       ),
+  //       $doc("$limit" -> 1),
+  //       $doc(
+  //         "$addFields" -> $doc(
+  //           "puzzleId" -> "$_id",
+  //           "roundId" -> $doc("$concat" -> $arr(s"$user${PuzzleRound.idSep}", "$_id"))
+  //           // "roundId" -> $doc("$concat" -> $arr(s"${user}:", "$_id"))
+  //         )
+  //       ),
+  //       $doc(
+  //         "$lookup" -> $doc(
+  //           "from"         -> colls.puzzle.name.value,
+  //           // "from"         -> "puzzle2_puzzle",
+  //           "localField"   -> "puzzleId",
+  //           "foreignField" -> "_id",
+  //           "as"           -> "puzzle"
+  //         )
+  //       ),
+  //       $doc(
+  //         "$lookup" -> $doc(
+  //           "from"         -> colls.round.name.value,
+  //           // "from"         -> "puzzle2_round",
+  //           "localField"   -> "roundId",
+  //           "foreignField" -> "_id",
+  //           "as"           -> "round"
+  //         )
+  //       )
+  //     ),
+  //     "cursor" -> BSONDocument()
+  //   )
+  //   val result = colls.round(
+  //     _.db
+  //       .runCommand(commandDoc, FailoverStrategy.default)
+  //       .cursor[BSONDocument](ReadPreference.primaryPreferred)
+  //       .headOption
+  //   )
+  //   result
+  //     .map: docOpt =>
+  //       import NextPuzzleResult.*
+  //       docOpt.fold[NextPuzzleResult](PathMissing): doc =>
+  //         doc
+  //           .getAsOpt[PuzzleId]("puzzleId")
+  //           .fold[NextPuzzleResult](PathEnded): puzzleId =>
+  //             doc
+  //               .getAsOpt[List[Puzzle]]("puzzle")
+  //               .flatMap(_.headOption)
+  //               .fold[NextPuzzleResult](PuzzleMissing(puzzleId)): puzzle =>
+  //                 if session.settings.color.exists(puzzle.color !=) then WrongColor(puzzle)
+  //                 else if doc.getAsOpt[List[Bdoc]]("round").exists(_.nonEmpty) then
+  //                   PuzzleAlreadyPlayed(puzzle)
+  //                 else PuzzleFound(puzzle)
+  //     .monValue: result =>
+  //       _.puzzle.selector.nextPuzzleResult(
+  //         theme = session.path.angle.key,
+  //         difficulty = session.settings.difficulty.key,
+  //         color = session.settings.color.fold("random")(_.name),
+  //         result = result.name
+  //       )
+
+
+
   private def nextPuzzleResult(session: PuzzleSession)(using me: Me): Fu[NextPuzzleResult] =
-    colls
-      .path:
-        _.aggregateOne(): framework =>
-          import framework.*
-          Match($id(session.path)) -> List(
-            // get the puzzle ID from session position
-            Project($doc("puzzleId" -> $doc("$arrayElemAt" -> $arr("$ids", session.positionInPath)))),
-            Project:
+    val user = me.userId
+    val commandDoc = $doc(
+      "aggregate" -> "puzzle2_round",
+      "pipeline" -> $arr(
+        $doc(
+          "$project" -> $doc(
+            "puzzle_id" ->
               $doc(
-                "puzzleId" -> true,
-                "roundId"  -> $doc("$concat" -> $arr(s"${me.userId}${PuzzleRound.idSep}", "$puzzleId"))
-              )
-            ,
-            // fetch the puzzle
-            PipelineOperator:
-              $doc:
-                "$lookup" -> $doc(
-                  "from"         -> colls.puzzle.name.value,
-                  "localField"   -> "puzzleId",
-                  "foreignField" -> "_id",
-                  "as"           -> "puzzle"
+                "$arrayElemAt" -> $arr(
+                  $doc("$split" -> $arr("$_id", ":")),
+                  1
                 )
-            ,
-            // look for existing round
-            PipelineOperator:
-              $doc:
-                "$lookup" -> $doc(
-                  "from"         -> colls.round.name.value,
-                  "localField"   -> "roundId",
-                  "foreignField" -> "_id",
-                  "as"           -> "round"
-                )
+              ),
+            "u" -> 1,
+            "w" -> 1
           )
+        ),
+        $doc(
+          "$group" -> $doc(
+            "_id"          -> "$puzzle_id",
+            "count"        -> $doc("$count" -> $doc()),
+            "done_by_user" -> $doc("$sum" -> $doc("$cond" -> $arr($doc("$eq" -> $arr("$u", f"$user")), 1, 0)))
+          )
+        ),
+        $doc(
+          "$unionWith" -> $doc(
+            "coll" -> "puzzle2_puzzle",
+            "pipeline" -> $arr(
+              $doc("$addFields" -> $doc(
+                "count" -> 0,
+                "done_by_user" -> 0
+                )
+              ),
+            )
+          )
+        ),
+        $doc(
+          "$sort" -> $doc(
+            "count" -> 1
+          )
+        ),
+        $doc(
+          "$group" -> $doc(
+            "_id" -> "$_id",
+            "count" -> $doc("$last" -> "$count"),
+            "done_by_user" -> $doc("$last" -> "$done_by_user")
+          )
+        ),
+        $doc(
+          "$match" -> $doc(
+            "done_by_user" -> 0
+          )
+        ),
+        $doc(
+          "$sort" -> $doc(
+            "count" -> 1
+          )
+        ),
+        $doc("$limit" -> 1),
+        $doc(
+          "$addFields" -> $doc(
+            "puzzleId" -> "$_id",
+            "roundId" -> $doc("$concat" -> $arr(s"$user${PuzzleRound.idSep}", "$_id"))
+            // "roundId" -> $doc("$concat" -> $arr(s"${user}:", "$_id"))
+          )
+        ),
+        $doc(
+          "$lookup" -> $doc(
+            "from"         -> colls.puzzle.name.value,
+            // "from"         -> "puzzle2_puzzle",
+            "localField"   -> "puzzleId",
+            "foreignField" -> "_id",
+            "as"           -> "puzzle"
+          )
+        ),
+        $doc(
+          "$lookup" -> $doc(
+            "from"         -> colls.round.name.value,
+            // "from"         -> "puzzle2_round",
+            "localField"   -> "roundId",
+            "foreignField" -> "_id",
+            "as"           -> "round"
+          )
+        )
+      ),
+      "cursor" -> BSONDocument()
+    )
+    val result = colls.round(
+      _.db
+        .runCommand(commandDoc, FailoverStrategy.default)
+        .cursor[BSONDocument](ReadPreference.primaryPreferred)
+        .headOption
+    )
+    result
       .map: docOpt =>
         import NextPuzzleResult.*
         docOpt.fold[NextPuzzleResult](PathMissing): doc =>

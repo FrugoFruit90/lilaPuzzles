@@ -27,7 +27,7 @@
   "dependencies": {
     "@types/cash": "workspace:*",
     "@types/lichess": "workspace:*",
-    "@types/node": "^20.9.1",
+    "@types/node": "^20.11.28",
     "@types/web": "^0.0.119",
     "@typescript-eslint/eslint-plugin": "^6.11.0",
     "@typescript-eslint/parser": "^6.11.0",

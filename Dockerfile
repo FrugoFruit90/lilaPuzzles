@@ -2,7 +2,7 @@ FROM node:20 as build
 
 SHELL ["/bin/bash", "-c"]
 
-RUN npm i -g pnpm
+RUN npm i -g pnpm@8.7
 
 RUN apt-get update && apt-get install -y \
         zip \
@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN curl -s "https://get.sdkman.io" | /bin/bash
 RUN chmod a+x /root/.sdkman/bin/sdkman-init.sh
-RUN source "/root/.sdkman/bin/sdkman-init.sh" \
+RUN source "/root/.sdkman/bin/sdkman-init.sh" \ 
     && sdk install java 21.0.2-tem \
     && sdk install sbt
 

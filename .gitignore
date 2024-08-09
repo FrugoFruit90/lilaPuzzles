@@ -61,3 +61,4 @@ dev
 puzzle_scripts/*.jsonl
 puzzle_scripts/*.pgn
 dump_*
+backup
