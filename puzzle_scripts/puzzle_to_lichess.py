@@ -4,8 +4,8 @@ import jnius_config
 
 path = str(
     (
-        pathlib.Path.home()
-        / ".cache/coursier/v1/https/raw.githubusercontent.com/lichess-org/lila-maven/master/org/lichess/compression_3/1.10/*"
+            pathlib.Path.home()
+            / ".cache/coursier/v1/https/raw.githubusercontent.com/lichess-org/lila-maven/master/org/lichess/compression_3/1.10/*"
     ).absolute()
 )
 jnius_config.set_classpath(".", path)
@@ -14,6 +14,7 @@ import ast
 import base64
 import datetime
 import json
+from typing import List
 
 import chess.pgn
 import more_itertools
@@ -84,17 +85,15 @@ print(rows_to_skip)
 with open("puzzles.pgn", "r") as f:
     lines = f.readlines()
 
-
 games_file = open("300k.pgn", encoding="utf-8-sig")
 game = chess.pgn.read_game(games_file)  # first read
-
 
 incorrect_games = []
 
 puzzle_ids = []
 
 with open("puzzles_filtered.jsonl", "w") as puzzles_filtered, open(
-    "games_filtered.jsonl", "w"
+        "games_filtered.jsonl", "w"
 ) as games_filtered:
     for i, line in enumerate(lines):
         if i not in set(rows_to_skip):
@@ -116,8 +115,8 @@ with open("puzzles_filtered.jsonl", "w") as puzzles_filtered, open(
             }
 
             while (
-                game.headers["White"] != generator_dict["white"]
-                or game.headers["Black"] != generator_dict["black"]
+                    game.headers["White"] != generator_dict["white"]
+                    or game.headers["Black"] != generator_dict["black"]
             ):
                 game = chess.pgn.read_game(games_file)
 
@@ -168,7 +167,7 @@ with open("puzzles_filtered.jsonl", "w") as puzzles_filtered, open(
             games_filtered.write(json.dumps(game_dict) + "\n")
 
 
-def create_puzzle_path(theme: str, tier: str, number: int, chunk: list[str]):
+def create_puzzle_path(theme: str, tier: str, number: int, chunk: List[str]):
     result = {
         "_id": f"{theme}|{tier}|0000-9999|1620110906065|{number}",
         "min": f"{theme}|{tier}|0000",
@@ -181,26 +180,27 @@ def create_puzzle_path(theme: str, tier: str, number: int, chunk: list[str]):
     return result
 
 
-theme = "mix"
-tier_good = "good"
-tier_all = "all"
-with open("paths_filtered_tier_good.jsonl", "w") as paths_filtered_tier_good, open(
-    "paths_filtered_tier_all.jsonl", "w"
-) as paths_filtered_tier_all:
-    for i, chunk in enumerate(more_itertools.chunked(puzzle_ids, 10)):
-        paths_filtered_tier_good.write(
-            json.dumps(
-                create_puzzle_path(theme=theme, tier=tier_good, number=i, chunk=chunk)
+if __name__ == "__main__":
+    theme = "mix"
+    tier_good = "good"
+    tier_all = "all"
+    with open("paths_filtered_tier_good.jsonl", "w") as paths_filtered_tier_good, open(
+            "paths_filtered_tier_all.jsonl", "w"
+    ) as paths_filtered_tier_all:
+        for i, chunk in enumerate(more_itertools.chunked(puzzle_ids, 10)):
+            paths_filtered_tier_good.write(
+                json.dumps(
+                    create_puzzle_path(theme=theme, tier=tier_good, number=i, chunk=chunk)
+                )
+                + "\n"
             )
-            + "\n"
-        )
-        paths_filtered_tier_all.write(
-            json.dumps(
-                create_puzzle_path(theme=theme, tier=tier_all, number=i, chunk=chunk)
+            paths_filtered_tier_all.write(
+                json.dumps(
+                    create_puzzle_path(theme=theme, tier=tier_all, number=i, chunk=chunk)
+                )
+                + "\n"
             )
-            + "\n"
-        )
 
-# print(len(incorrect_games))
+    # print(len(incorrect_games))
 
-print("Done")
+    print("Done")
