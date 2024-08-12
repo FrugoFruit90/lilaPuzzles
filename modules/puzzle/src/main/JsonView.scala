@@ -11,7 +11,7 @@ import lila.user.Me
 
 import lila.db.dsl.{*, given}
 
-import java.time.{LocalDateTime, DayOfWeek}
+import java.time.{LocalDateTime, DayOfWeek, ZoneOffset}
 import reactivemongo.api.FailoverStrategy
 import reactivemongo.api.bson.BSONDocument
 import reactivemongo.api.bson.BSONDateTime
@@ -19,7 +19,8 @@ import reactivemongo.api.ReadPreference
 
 final class JsonView(
     gameJson: GameJson,
-    gameRepo: GameRepo
+    gameRepo: GameRepo,
+    colls: PuzzleColls,
 )(using Executor):
 
   import JsonView.*
