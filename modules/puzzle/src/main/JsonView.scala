@@ -9,7 +9,13 @@ import lila.rating.Perf
 import lila.tree
 import lila.user.Me
 
+import lila.db.dsl.{*, given}
+
 import java.time.{LocalDateTime, DayOfWeek}
+import reactivemongo.api.FailoverStrategy
+import reactivemongo.api.bson.BSONDocument
+import reactivemongo.api.bson.BSONDateTime
+import reactivemongo.api.ReadPreference
 
 final class JsonView(
     gameJson: GameJson,
@@ -52,35 +58,43 @@ final class JsonView(
   private def countUserPuzzlesFromLastMonday()(using me: Me): Long = {
     val user = me.userId
 
-    // Define the date range starting from last Monday 00:00
-    val now = java.time.ZonedDateTime.now()
-    val monday = now.`with`(java.time.DayOfWeek.MONDAY)
-    val lastMonday = monday.withHour(0).withMinute(0).withSecond(0).withNano(0)
-    val lastMondayEpochMillis = lastMonday.toInstant.toEpochMilli
+    // Calculate the start of the current week (Monday)
+    val now = LocalDateTime.now()
+    val dayOfWeek = now.getDayOfWeek.getValue
+    val startOfWeek = now.minusDays(dayOfWeek - 1).toLocalDate.atStartOfDay()
 
-    val pipeline = List(
-      // Match documents by the specific user ID
-      "match"(
-        equal("u", user)
-      ),
-      // Group by user ID and count the number of attempts
-      group("$u", sum("total_attempts", 1))
-    )
+    // Convert startOfWeek to BSONDateTime
+    val startOfWeekBson = BSONDateTime(startOfWeek.toInstant(ZoneOffset.UTC).toEpochMilli)
 
-    val commandDoc = BsonDocument(
+    val commandDoc = $doc(
       "aggregate" -> "puzzle2_round",
-      "pipeline" -> pipeline,
-      "cursor" -> BsonDocument()
+      "pipeline" -> $arr(
+        $doc(
+          "$match" -> $doc(
+            "u" -> user,
+            "solved_at" -> $doc(
+              "$gte" -> startOfWeekBson
+            )
+          )
+        ),
+        $doc(
+          "$count" -> "solved_count"
+        )
+      ),
+      "cursor" -> BSONDocument()
     )
 
-    val resultFuture = colls.round(_.db.runCommand(commandDoc).headOption)
-    val result = Await.result(resultFuture, 10.seconds)
+    val result = colls.round(
+      _.db
+        .runCommand(commandDoc, FailoverStrategy.default)
+        .cursor[BSONDocument](ReadPreference.primaryPreferred)
+        .headOption
+    )
 
-    // Extract the count from the result and return it directly
-    result match {
-      case Some(doc) => doc.get("total_attempts").map(_.asInt32().getValue.toLong).getOrElse(0L)
-      case None => 0L
-    }  }
+    result.map { docOpt =>
+      docOpt.flatMap(_.getAsOpt[Int]("solved_count")).getOrElse(0)
+    }
+  }
 
   def userJson(using me: Option[Me], perf: Perf) = me.map: me =>
     Json
