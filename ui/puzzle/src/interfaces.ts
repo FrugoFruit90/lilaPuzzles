@@ -102,6 +102,7 @@ export interface PuzzleUser {
   id: string;
   rating: number;
   provisional?: boolean;
+  solvedFromMonday: number | string
 }
 
 export interface Puzzle {

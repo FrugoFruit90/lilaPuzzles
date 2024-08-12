@@ -136,6 +136,15 @@ export const userBox = (ctrl: PuzzleCtrl): VNode => {
   ]);
 };
 
+export const solvedFromMonday = (ctrl: PuzzleCtrl): VNode => {
+  return h('div.puzzle__side__solved-from-monday', [
+    h(
+      'strong', `solved from Monday = ${ctrl.data.user?.solvedFromMonday}`
+    ),
+  ]);
+};
+
+
 export const streakBox = (ctrl: PuzzleCtrl) =>
   h('div.puzzle__side__user', renderStreak(ctrl.streak!, ctrl.trans.noarg));
 

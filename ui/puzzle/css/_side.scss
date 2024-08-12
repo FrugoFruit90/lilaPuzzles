@@ -77,6 +77,13 @@
     }
   }
 
+  &__solved-from-monday {
+    @extend %box-neat;
+
+    background: $c-bg-box;
+    padding: 2vmin;
+  }
+
   &__streak {
     &__info {
       h1 {

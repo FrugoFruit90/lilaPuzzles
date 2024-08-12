@@ -51,7 +51,8 @@ final class JsonView(
     Json
       .obj(
         "id"     -> me.userId,
-        "rating" -> perf.intRating
+        "rating" -> perf.intRating,
+        "solvedFromMonday"    -> "e.g., 12345"
       )
       .add("provisional" -> perf.provisional)
 

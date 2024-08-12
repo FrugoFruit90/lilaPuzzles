@@ -109,7 +109,7 @@
 
     @include breakpoint($mq-x-large) {
       grid-template-columns: 1fr;
-      grid-template-areas: 'metas' 'user' 'theme' 'config';
+      grid-template-areas: 'metas' 'user' 'solved-from-monday' 'theme' 'config';
       grid-template-rows: min-content min-content min-content;
       min-width: 250px;
       max-width: 350px;
@@ -138,5 +138,10 @@
     &__replay {
       grid-area: replay;
     }
+
+    &__solved-from-monday {
+      grid-area: solved-from-monday;
+    }
+
   }
 }

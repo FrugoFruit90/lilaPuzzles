@@ -90,6 +90,7 @@ export default function (ctrl: PuzzleCtrl): VNode {
         side.replay(ctrl),
         side.puzzleBox(ctrl),
         ctrl.streak ? side.streakBox(ctrl) : side.userBox(ctrl),
+        side.solvedFromMonday(ctrl),
         side.config(ctrl),
         theme(ctrl),
       ]),
