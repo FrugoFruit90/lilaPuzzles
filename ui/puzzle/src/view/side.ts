@@ -139,7 +139,7 @@ export const userBox = (ctrl: PuzzleCtrl): VNode => {
 export const solvedFromMonday = (ctrl: PuzzleCtrl): VNode => {
   return h('div.puzzle__side__solved-from-monday', [
     h(
-      'strong', `solved from Monday = ${ctrl.data.user?.solvedFromMonday}`
+      'strong', `Solved this week: ${ctrl.data.user?.solvedFromMonday}`
     ),
   ]);
 };

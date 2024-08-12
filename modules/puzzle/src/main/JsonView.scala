@@ -47,12 +47,57 @@ final class JsonView(
                 Json.obj("key" -> op.key, "name" -> op.name))
         )
 
+  private def countUserPuzzlesFromLastMonday()(using me: Me): Fu[Map[UserId, Int]] = {
+      val user = me.userId
+
+      // Define the date range starting from last Monday 00:00
+      val now = java.time.ZonedDateTime.now()
+      val lastMonday = now.with(java.time.DayOfWeek.MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0)
+      val lastMondayEpochMillis = lastMonday.toInstant.toEpochMilli
+
+      val commandDoc = $doc(
+        "aggregate" -> "round",
+        "pipeline" -> $arr(
+          $doc(
+            "$match" -> $doc(
+              "d" -> $doc(
+                "$gte" -> lastMondayEpochMillis
+              )
+            )
+          ),
+          $doc(
+            "$group" -> $doc(
+              "_id" -> "$u", // Group by user id
+              "count" -> $doc(
+                "$sum" -> 1 // Count the number of documents per user
+              )
+            )
+          )
+        ),
+        "cursor" -> BSONDocument()
+      )
+
+      val result = colls.round(
+        _.db
+          .runCommand(commandDoc, FailoverStrategy.default)
+          .cursor[BSONDocument](ReadPreference.primaryPreferred)
+          .collect[List](-1, Cursor.FailOnError[List[BSONDocument]]())
+      )
+
+      result.map { docs =>
+        docs.map { doc =>
+          doc.getAsOpt[UserId]("_id").getOrElse(throw new Exception("Missing user ID")) ->
+            doc.getAsOpt[Int]("count").getOrElse(0)
+        }.toMap
+      }
+    }
+
   def userJson(using me: Option[Me], perf: Perf) = me.map: me =>
     Json
       .obj(
         "id"     -> me.userId,
         "rating" -> perf.intRating,
-        "solvedFromMonday"    -> "e.g., 12345"
+        "solvedFromMonday"    -> countUserPuzzlesFromLastMonday()
       )
       .add("provisional" -> perf.provisional)
 
