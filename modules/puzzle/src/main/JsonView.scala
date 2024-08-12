@@ -9,6 +9,8 @@ import lila.rating.Perf
 import lila.tree
 import lila.user.Me
 
+import java.time.{LocalDateTime, DayOfWeek}
+
 final class JsonView(
     gameJson: GameJson,
     gameRepo: GameRepo
@@ -47,50 +49,38 @@ final class JsonView(
                 Json.obj("key" -> op.key, "name" -> op.name))
         )
 
-  private def countUserPuzzlesFromLastMonday()(using me: Me): Fu[Map[UserId, Int]] = {
-      val user = me.userId
+  private def countUserPuzzlesFromLastMonday()(using me: Me): Long = {
+    val user = me.userId
 
-      // Define the date range starting from last Monday 00:00
-      val now = java.time.ZonedDateTime.now()
-      val lastMonday = now.with(java.time.DayOfWeek.MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0)
-      val lastMondayEpochMillis = lastMonday.toInstant.toEpochMilli
+    // Define the date range starting from last Monday 00:00
+    val now = java.time.ZonedDateTime.now()
+    val monday = now.`with`(java.time.DayOfWeek.MONDAY)
+    val lastMonday = monday.withHour(0).withMinute(0).withSecond(0).withNano(0)
+    val lastMondayEpochMillis = lastMonday.toInstant.toEpochMilli
 
-      val commandDoc = $doc(
-        "aggregate" -> "round",
-        "pipeline" -> $arr(
-          $doc(
-            "$match" -> $doc(
-              "d" -> $doc(
-                "$gte" -> lastMondayEpochMillis
-              )
-            )
-          ),
-          $doc(
-            "$group" -> $doc(
-              "_id" -> "$u", // Group by user id
-              "count" -> $doc(
-                "$sum" -> 1 // Count the number of documents per user
-              )
-            )
-          )
-        ),
-        "cursor" -> BSONDocument()
-      )
+    val pipeline = List(
+      // Match documents by the specific user ID
+      "match"(
+        equal("u", user)
+      ),
+      // Group by user ID and count the number of attempts
+      group("$u", sum("total_attempts", 1))
+    )
 
-      val result = colls.round(
-        _.db
-          .runCommand(commandDoc, FailoverStrategy.default)
-          .cursor[BSONDocument](ReadPreference.primaryPreferred)
-          .collect[List](-1, Cursor.FailOnError[List[BSONDocument]]())
-      )
+    val commandDoc = BsonDocument(
+      "aggregate" -> "puzzle2_round",
+      "pipeline" -> pipeline,
+      "cursor" -> BsonDocument()
+    )
 
-      result.map { docs =>
-        docs.map { doc =>
-          doc.getAsOpt[UserId]("_id").getOrElse(throw new Exception("Missing user ID")) ->
-            doc.getAsOpt[Int]("count").getOrElse(0)
-        }.toMap
-      }
-    }
+    val resultFuture = colls.round(_.db.runCommand(commandDoc).headOption)
+    val result = Await.result(resultFuture, 10.seconds)
+
+    // Extract the count from the result and return it directly
+    result match {
+      case Some(doc) => doc.get("total_attempts").map(_.asInt32().getValue.toLong).getOrElse(0L)
+      case None => 0L
+    }  }
 
   def userJson(using me: Option[Me], perf: Perf) = me.map: me =>
     Json
