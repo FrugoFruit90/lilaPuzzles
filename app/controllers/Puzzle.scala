@@ -17,10 +17,53 @@ import lila.user.User
 import lila.common.LangPath
 import play.api.i18n.Lang
 import lila.rating.{ Perf, PerfType }
+import lila.db.dsl.{ *, given }
+import reactivemongo.api.bson.{BSONDocument, BSONInteger}
+import reactivemongo.api.FailoverStrategy
+import reactivemongo.api.ReadPreference
+import java.time.LocalDateTime
+import java.time.temporal.TemporalAdjusters
+import java.time.DayOfWeek
+import java.time.ZoneOffset
 
 final class Puzzle(env: Env, apiC: => Api) extends LilaController(env):
 
   private val cookieDifficulty = "puz-diff"
+
+  private def countUserPuzzlesFromLastMonday(me: Option[Me]) = {
+    val user = me.map(_.userId).getOrElse(UserId(""))
+    val lastMonday = LocalDateTime
+      .now()
+      .toLocalDate()
+      .`with`(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+      .atStartOfDay(ZoneOffset.UTC)
+    val commandDoc = $doc(
+      "aggregate" -> "puzzle2_round",
+      "pipeline" -> $arr(
+        $doc(
+          "$match" -> $doc(
+            "u" -> user,
+            "d" -> $doc("$gte" -> lastMonday),
+          )
+        ),
+        $doc(
+          "$count" -> "solved_count"
+        )
+      ),
+      "cursor" -> BSONDocument()
+    )
+    val result = env.puzzle.colls.round(
+      _.db
+        .runCommand(commandDoc, FailoverStrategy.default)
+        .cursor[BSONDocument](ReadPreference.primaryPreferred)
+        .headOption
+    )
+    result map: value =>
+      value.flatMap(_.get("solved_count")) match {
+        case Some(BSONInteger(v)) => v
+        case _ => 0
+      }
+  }
 
   private def renderJson(
       puzzle: Puz,
@@ -30,10 +73,13 @@ final class Puzzle(env: Env, apiC: => Api) extends LilaController(env):
       apiVersion: Option[ApiVersion] = None
   )(using ctx: Context): Fu[JsObject] =
     given me: Option[Me] = newMe orElse ctx.me
-    WithPuzzlePerf:
-      if apiVersion.exists(v => !ApiVersion.puzzleV2(v))
-      then env.puzzle.jsonView.bc(puzzle)
-      else env.puzzle.jsonView(puzzle, angle.some, replay)
+    for 
+      solvedFromMonday <- countUserPuzzlesFromLastMonday(me)
+      result <- WithPuzzlePerf:
+                    if apiVersion.exists(v => !ApiVersion.puzzleV2(v))
+                    then env.puzzle.jsonView.bc(puzzle)
+                    else env.puzzle.jsonView(puzzle, angle.some, replay)
+    yield result.deepMerge(Json.obj("user" -> Json.obj("solvedFromMonday" -> solvedFromMonday)))
 
   private def renderShow(
       puzzle: Puz,

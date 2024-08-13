@@ -56,53 +56,11 @@ final class JsonView(
                 Json.obj("key" -> op.key, "name" -> op.name))
         )
 
-  private def countUserPuzzlesFromLastMonday()(using me: Me): Long = {
-    val user = me.userId
-
-    // Calculate the start of the current week (Monday)
-    val now = LocalDateTime.now()
-    val dayOfWeek = now.getDayOfWeek.getValue
-    val startOfWeek = now.minusDays(dayOfWeek - 1).toLocalDate.atStartOfDay()
-
-    // Convert startOfWeek to BSONDateTime
-    val startOfWeekBson = BSONDateTime(startOfWeek.toInstant(ZoneOffset.UTC).toEpochMilli)
-
-    val commandDoc = $doc(
-      "aggregate" -> "puzzle2_round",
-      "pipeline" -> $arr(
-        $doc(
-          "$match" -> $doc(
-            "u" -> user,
-            "solved_at" -> $doc(
-              "$gte" -> startOfWeekBson
-            )
-          )
-        ),
-        $doc(
-          "$count" -> "solved_count"
-        )
-      ),
-      "cursor" -> BSONDocument()
-    )
-
-    val result = colls.round(
-      _.db
-        .runCommand(commandDoc, FailoverStrategy.default)
-        .cursor[BSONDocument](ReadPreference.primaryPreferred)
-        .headOption
-    )
-
-    result.map { docOpt =>
-      docOpt.flatMap(_.getAsOpt[Int]("solved_count")).getOrElse(0)
-    }
-  }
-
   def userJson(using me: Option[Me], perf: Perf) = me.map: me =>
     Json
       .obj(
         "id"     -> me.userId,
         "rating" -> perf.intRating,
-        "solvedFromMonday"    -> countUserPuzzlesFromLastMonday()(using me)
       )
       .add("provisional" -> perf.provisional)
 
