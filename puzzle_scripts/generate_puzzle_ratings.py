@@ -29,7 +29,8 @@ def get_all_user_puzzle_ratings(users: list):
 
 
 if __name__ == "__main__":
-    DUMP_FOLDER_NAME = "dump_07_28"
+    DUMP_FOLDER_NAME = "dump_08_19"
+    RATING_FOLDER_NAME = "user_ratings_08_19"
     UPDATE_USER_RATINGS = True
 
     with open(f'data/{DUMP_FOLDER_NAME}/lichess/puzzle2_round.bson', 'rb') as f:
@@ -47,9 +48,9 @@ if __name__ == "__main__":
         users = bson.decode_all(f.read())
     if UPDATE_USER_RATINGS:
         user_ratings = get_all_user_puzzle_ratings(users)
-        json.dump(user_ratings, open("data/user_ratings.json", 'w'))
+        json.dump(user_ratings, open(RATING_FOLDER_NAME, 'w'))
     else:
-        user_ratings = json.load(open("data/user_ratings.json"))
+        user_ratings = json.load(open(RATING_FOLDER_NAME))
 
     for user in user_ratings:
         user_ratings[user]["rating"] -= 200
