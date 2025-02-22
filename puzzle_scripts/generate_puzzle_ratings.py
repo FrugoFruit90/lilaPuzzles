@@ -31,7 +31,7 @@ def get_all_user_puzzle_ratings(users: list):
 
 
 if __name__ == "__main__":
-    DUMP_FOLDER_NAME = "dump_09_01"
+    DUMP_FOLDER_NAME = "dump_25_01_30"
     USER_RATINGS_OLD = "08_13"
     UPDATE_USER_RATINGS = False
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     users = puzzle_attempts["u"].unique()
 
     user_ratings_past = json.load(open(f'data/user_ratings_{USER_RATINGS_OLD}.json'))
-    user_ratings_past.update(json.load(open(f'data/user_ratings_2024-09-01.json')))
+    user_ratings_past.update(json.load(open(f'data/user_ratings_08_13.json')))
     if UPDATE_USER_RATINGS:
         user_ratings_new = get_all_user_puzzle_ratings(users)
         json.dump(user_ratings_new, open(f'data/user_ratings_{datetime.date.today()}.json', 'w'))
@@ -74,11 +74,12 @@ if __name__ == "__main__":
     for puzzle_id in puzzle_attempts["puzzle_id"].unique():
         puzzle_glicko2 = glicko2.Player(rating=1500, rd=500, vol=0.09)
         puzzle_df = puzzle_attempts[puzzle_attempts["puzzle_id"] == puzzle_id]
-        puzzle_glicko2.update_player(
-            puzzle_df["player_rating"].tolist(),
-            puzzle_df["player_rd"].tolist(),
-            (~puzzle_df["w"]).tolist()
-        )
+        for i, attempt in puzzle_df.iterrows():
+            puzzle_glicko2.update_player(
+                [attempt['player_rating']],
+                [attempt['player_rd']],
+                [not attempt["w"]]
+            )
         puzzle_rating = {
             "rating": puzzle_glicko2.rating,
             "rd": puzzle_glicko2.rd,
@@ -112,7 +113,7 @@ if __name__ == "__main__":
 
     json.dump(
         puzzle_evaluation,
-        open(f"data/puzzle_evaluation{datetime.date.today()}.json", 'w'),
+        open(f"data/puzzle_evaluation_{datetime.date.today()}.json", 'w'),
         indent=4
     )
 
@@ -129,4 +130,4 @@ json.dump(
     indent=4
 )
 
-full_eval_merged[["PuzzleId", "0"]].to_csv("final_data.csv", index=False)
+full_eval_merged[["PuzzleId", 0]].to_csv(f"final_data_{datetime.date.today()}.csv", index=False)
