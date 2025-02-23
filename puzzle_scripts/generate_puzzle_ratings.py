@@ -32,7 +32,7 @@ def get_all_user_puzzle_ratings(users: list):
 
 if __name__ == "__main__":
     DUMP_FOLDER_NAME = "dump_25_01_30"
-    USER_RATINGS_OLD = "08_13"
+    USER_RATINGS_OLD = "user_ratings_2025-02-23.json"
     UPDATE_USER_RATINGS = False
 
     replace_dict = {"fjd": "f-dunne", "fruggio": "frugofruit90", "mszczepaniak": "Szczepaniak"}
@@ -41,21 +41,24 @@ if __name__ == "__main__":
         puzzle_attempts = pd.DataFrame(bson.decode_all(f.read()))
         puzzle_attempts["puzzle_id"] = puzzle_attempts["_id"].str.split(":", expand=True).loc[:, 1]
 
-    with open(f'data/mongo_dump/puzzle2_round.bson', 'rb') as f:
-        puzzle_attempts_fruggio = pd.DataFrame(bson.decode_all(f.read()))
-        puzzle_attempts_fruggio["puzzle_id"] = puzzle_attempts_fruggio["_id"].str.split(":", expand=True).loc[:, 1]
-        puzzle_attempts_fruggio['u'] = "frugofruit90"
+    final_ids = puzzle_attempts["puzzle_id"]
 
-    puzzle_attempts = pd.concat([puzzle_attempts_fruggio, puzzle_attempts], axis=0)
+    with open(f'data/mongo_dump/puzzle2_round.bson', 'rb') as f:
+        p_a_f = pd.DataFrame(bson.decode_all(f.read()))
+        p_a_f["puzzle_id"] = p_a_f["_id"].str.split(":", expand=True).loc[:, 1]
+        p_a_f['u'] = "frugofruit90"
+        p_a_f = p_a_f[p_a_f["puzzle_id"].isin(puzzle_attempts["puzzle_id"].unique())]
+
+    puzzle_attempts = pd.concat([p_a_f, puzzle_attempts], axis=0)
     puzzle_attempts["u"] = puzzle_attempts["u"].replace(replace_dict)
 
     users = puzzle_attempts["u"].unique()
 
-    user_ratings_past = json.load(open(f'data/user_ratings_{USER_RATINGS_OLD}.json'))
+    user_ratings_past = json.load(open(f'data/{USER_RATINGS_OLD}'))
     user_ratings_past.update(json.load(open(f'data/user_ratings_08_13.json')))
     if UPDATE_USER_RATINGS:
         user_ratings_new = get_all_user_puzzle_ratings(users)
-        json.dump(user_ratings_new, open(f'data/user_ratings_{datetime.date.today()}.json', 'w'))
+        json.dump(user_ratings_new, open(f'data/{datetime.date.today()}', 'w'))
     else:
         user_ratings_new = {}
     user_ratings_past.update(user_ratings_new)
@@ -63,10 +66,11 @@ if __name__ == "__main__":
 
     user_ratings_df = pd.DataFrame.from_dict(user_ratings, orient="index").rename(
         columns={"rating": "player_rating", "rd": "player_rd"})
-    user_ratings_df["player_rating"] -= 200
-    user_ratings_df = user_ratings_df.fillna({"player_rating": 1500, "player_rd": 500})
-
-    puzzle_attempts = puzzle_attempts.merge(user_ratings_df, right_index=True, left_on="u")
+    puzzle_attempts = puzzle_attempts.merge(user_ratings_df, how="left", right_index=True, left_on="u")
+    print(f"Total attempts: {puzzle_attempts.shape[0]}")
+    print(f"{puzzle_attempts["player_rating"].isnull().sum()} attempts don't have rating applied")
+    puzzle_attempts["player_rating"] = puzzle_attempts["player_rating"].fillna(1500.0)
+    puzzle_attempts["player_rd"] = puzzle_attempts["player_rd"].fillna(500.0)
     puzzle_ratings_final = {}
     puzzle_ratings_leaderboard = {}
     puzzle_evaluation = {}
@@ -130,4 +134,4 @@ json.dump(
     indent=4
 )
 
-full_eval_merged[["PuzzleId", 0]].to_csv(f"final_data_{datetime.date.today()}.csv", index=False)
+full_eval_merged[["PuzzleId", 0]].to_csv(f"data/final_data_{datetime.date.today()}.csv", index=False)
