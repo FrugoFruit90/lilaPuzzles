@@ -70,6 +70,7 @@ if __name__ == "__main__":
     print(f"Total attempts: {puzzle_attempts.shape[0]}")
     print(f"{puzzle_attempts["player_rating"].isnull().sum()} attempts don't have rating applied")
     puzzle_attempts["player_rating"] = puzzle_attempts["player_rating"].fillna(1500.0)
+    puzzle_attempts["player_rating"] -= 200
     puzzle_attempts["player_rd"] = puzzle_attempts["player_rd"].fillna(500.0)
     puzzle_ratings_final = {}
     puzzle_ratings_leaderboard = {}
@@ -95,43 +96,10 @@ if __name__ == "__main__":
         puzzle_ratings_leaderboard[puzzle_id] = puzzle_rating
         puzzle_evaluation[puzzle_id] = puzzle_rating["rating"]
 
-    puzzle_ratings_final
-    puzzle_df_test = puzzle_attempts[puzzle_attempts["puzzle_id"] == 'p0063']
-    puzzle_df_test[["player_rating", "player_rd", "w"]]
-#     print(sum([puzzle["no_tries"] for puzzle in puzzle_ratings_final.values()]))
-#     print(sum([puzzle["no_tries"] > 15 for puzzle in puzzle_ratings_final.values()]))
-#     print(sum([puzzle["rd"] < 130 for puzzle in puzzle_ratings_final.values()]))
-#     print(sorted([puzzle["no_tries"] for puzzle in puzzle_ratings_final.values()]))
-#
-    json.dump(
-        puzzle_ratings_final,
-        open(f"data/puzzle_ratings_final_{datetime.date.today()}.json", 'w'),
-        indent=4
-    )
-
-    json.dump(
-        puzzle_ratings_leaderboard,
-        open(f"data/puzzle_ratings_leaderboard_{datetime.date.today()}.json", 'w'),
-        indent=4
-    )
-
-    json.dump(
-        puzzle_evaluation,
-        open(f"data/puzzle_evaluation_{datetime.date.today()}.json", 'w'),
-        indent=4
-    )
-
-puzzle_evaluation_df = pd.DataFrame.from_dict(puzzle_evaluation, orient="index")
-
-full_eval = pd.read_csv("data/test_data.csv").reset_index()
-full_eval_merged = full_eval.merge(puzzle_evaluation_df, left_on="PuzzleId", right_index=True)
-full_eval_merged.loc[:, 0] = full_eval_merged.loc[:, 0].round().astype(int)
-full_eval_merged.loc[:, 0].to_dict()
-
-json.dump(
-    full_eval_merged.loc[:, 0].to_dict(),
-    open(f"data/eval_final_{datetime.date.today()}.json", 'w'),
-    indent=4
-)
-
-full_eval_merged[["PuzzleId", 0]].to_csv(f"data/final_data_{datetime.date.today()}.csv", index=False)
+    # After the last iteration
+    puzzle_evaluation_df = pd.DataFrame.from_dict(puzzle_ratings_final,
+                                                  orient="index",
+                                                  columns=["rating", "rd", "no_tries", "no_successes"]).round().astype(int)
+    full_eval = pd.read_csv("data/test_data.csv")
+    full_eval_merged = full_eval.merge(puzzle_evaluation_df, left_on="PuzzleId", right_index=True)
+    full_eval_merged.to_csv(f"data/final_data_{datetime.date.today()}.csv", index=False)
