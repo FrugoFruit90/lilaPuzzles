@@ -21,7 +21,7 @@ def create_puzzle_path(theme: str, tier: str, number: int, chunk: List[str]):
     return result
 
 
-os.chdir("/home/janek/Documents/Projects/lilaPuzzles")
+os.chdir("/")
 
 with open('data/mongo_dump/puzzle2_path.bson', 'rb') as f:
     puzzle2_path = bson.decode_all(f.read())
